@@ -30,7 +30,7 @@
 #### データセット
 静岡県の法人データ（12万7千行、30列）のCSVファイルを用いて、読み込み速度の計測を行いました。<br>
 2025年12月26日時点のデータを使用しています。<br>
-出典：国税庁法人番号公表サイト https://www.houjin-bangou.nta.go.jp
+出典：国税庁法人番号公表サイト（国税庁）<a href="https://www.houjin-bangou.nta.go.jp" target="_blank" rel="noopener noreferrer">https://www.houjin-bangou.nta.go.jp</a>
 
 ### 2. データ操作（検索・集計）の比較
 同一CSVデータに対して、Pandas と Polarsで、以下のデータ操作を実装・比較しました。
