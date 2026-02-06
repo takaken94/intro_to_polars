@@ -3,7 +3,7 @@ import polars as pl
 def main():
     # --- 設定 ---
     # 入力ファイル
-    in_file_path = "data/11_saitama_all.csv"
+    in_file_path = "data/22_shizuoka_all.csv"
 
     # --- 処理 ---
     query = (
