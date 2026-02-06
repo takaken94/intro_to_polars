@@ -1,12 +1,12 @@
 # Pandas と Polars の比較・検証
 
 ## 概要
-本リポジトリは、Python によるデータ処理・ETL 処理を想定し、**Pandas** と **Polars** のパフォーマンスおよび使い勝手を比較・検証する学習用プロジェクトです。
+Python によるデータ処理・ETL 処理を想定し、**Pandas** と **Polars** のパフォーマンスおよび使い勝手を比較・検証します。
 
 特に以下の観点で、実務利用を意識した検証を行っています。
 - CSVファイルの読み込み性能
 - データ検索・フィルタリング・集計処理
-- Polars の Lazy API による最適化効果
+- Polars の Lazy API による効果
 
 ## 利用技術
 - Python 3.12
@@ -48,17 +48,70 @@
 | 日付条件 | Timestamp比較 | Date型比較 |
 | 集計 | groupby + size | group_by + len |
 
+#### 考察
+- Polars の書き方は、SQLの処理フロー（WHERE → GROUP BY → ORDER BY）と対応関係が明確で、SQLに慣れている人には処理の流れが理解しやすい。
+
 #### 使用したコード
 - Pandas 実装: practice_pandas.py
 - Polars 実装: practice_polars.py
 
-### 3. Polars Lazy API による最適化検証
+### 3. Polars Lazy API による効果
 Polars の特徴である Lazy API を用いて、検索・集計処理を「遅延評価」で実装しました。
 
-- scan_csv() による CSV の遅延読み込み
+- scan_csv() CSV読み込みの遅延
 - filter / group_by / sort を組み合わせたクエリ構築
-- collect() 時点での実行
-- explain() を用いて、クエリの実行計画を確認できる
+- collect() 呼び出しでクエリが実行される
+- explain() で、クエリの実行計画を確認できる
+
+```python
+    # --- 処理 ---
+    query = (
+        pl.scan_csv(
+            source=in_file_path,
+            infer_schema_length=0, # 全ての列を str として読み込む pandas の dtype=str に相当
+        )
+        .filter(pl.col("kind") == "101")  # 法人種別 101: 国の機関
+        .group_by("cityName")
+        .agg(pl.len().alias("count"))
+        .sort("count", descending=True)
+    )
+
+    df = query.collect()
+    pl.Config.set_tbl_rows(100)
+    print(df)
+
+    print(query.explain())
+```
+
+
+```plain text
+vscode ➜ /workspaces/learning_polars (main) $ python practice_polars_lazy.py 
+shape: (10, 2)
+┌──────────────┬───────┐
+│ cityName     ┆ count │
+│ ---          ┆ ---   │
+│ str          ┆ u32   │
+╞══════════════╪═══════╡
+│ 静岡市葵区    ┆ 5     │
+│ 沼津市       ┆ 2     │
+│ 浜松市中央区  ┆ 2     │
+│ 富士市       ┆ 1     │
+│ 島田市       ┆ 1     │
+│ 三島市       ┆ 1     │
+│ 掛川市       ┆ 1     │
+│ 熱海市       ┆ 1     │
+│ 静岡市清水区  ┆ 1     │
+│ 下田市       ┆ 1     │
+└─────────────┴───────┘
+SORT BY [descending: [true]] [col("count")]
+  AGGREGATE[maintain_order: false]
+    [len().alias("count")] BY [col("cityName")]
+    FROM
+    Csv SCAN [data/22_shizuoka_all.csv]
+    PROJECT 2/30 COLUMNS
+    SELECTION: [(col("kind")) == ("101")]
+    ESTIMATED ROWS: 95673
+```
 
 #### 考察
 - Lazy API により、不要な列・行の読み込みが抑制される
